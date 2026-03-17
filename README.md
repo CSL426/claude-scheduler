@@ -5,7 +5,7 @@
 ## 支援平台
 
 - **Windows**: PowerShell + Task Scheduler
-- **Linux**: Bash + Cron
+- **macOS / Linux**: Bash + Cron
 
 ## 快速開始
 
@@ -18,7 +18,7 @@ windows.bat
 test_now.bat
 ```
 
-### Linux
+### macOS / Linux
 ```bash
 # 設定 cron 任務
 ./linux.sh
@@ -35,11 +35,11 @@ test_now.bat
 ## 背景執行
 
 - **Windows**: 完全隱藏執行，不會跳出視窗
-- **Linux**: 背景執行
+- **macOS / Linux**: 背景執行
 
 ## 時區設定
 
-### Linux
+### macOS / Linux
 預設 UTC+8，可修改 `claude_scheduler.sh` 中的 `TIMEZONE`
 
 ### Windows
@@ -49,7 +49,7 @@ test_now.bat
 
 ### 修改時間
 ```bash
-# Linux: 編輯 claude_scheduler.sh
+# macOS / Linux: 編輯 claude_scheduler.sh
 SCHEDULE_TIMES=("08:00" "13:00" "18:00" "23:00")
 
 # Windows: 編輯 claude_scheduler.ps1
@@ -58,7 +58,7 @@ $scheduleTimes = @("08:00", "13:00", "18:00", "23:00")
 
 ### 修改指令
 ```bash
-# Linux
+# macOS / Linux
 COMMAND_TO_RUN="your command"
 
 # Windows
@@ -79,7 +79,7 @@ $commandToRun = "your command"
 test_now.bat
 ```
 
-### Linux
+### macOS / Linux
 ```bash
 ./test_now.sh
 ```
@@ -94,7 +94,7 @@ schtasks /delete /tn Claude_1730 /f
 schtasks /delete /tn Claude_2230 /f
 ```
 
-### Linux
+### macOS / Linux
 ```bash
 crontab -e  # 刪除相關行
 ```
@@ -106,8 +106,8 @@ crontab -e  # 刪除相關行
 - `windows.bat` - 排程設定工具（需要管理員權限）
 - `test_now.bat` - 立即測試工具
 
-### Linux
-- `claude_scheduler.sh` - 主腳本  
+### macOS / Linux
+- `claude_scheduler.sh` - 主腳本
 - `linux.sh` - cron 設定工具
 - `test_now.sh` - 立即測試工具
 

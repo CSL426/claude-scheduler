@@ -103,7 +103,7 @@ setup_cron() {
     write_log "Setting up Linux cron jobs..."
 
     local script_path
-    script_path=$(realpath "$0")
+    script_path=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
 
     # Remove existing cron jobs for this script
     crontab -l 2>/dev/null | grep -v "$script_path" | crontab -
@@ -116,8 +116,8 @@ setup_cron() {
 
         # Create cron job with timezone support
         if [[ -n "$TIMEZONE" ]]; then
-            # Use TZ environment variable for timezone
-            (crontab -l 2>/dev/null; echo "TZ=$TIMEZONE $minute $hour * * * $script_path") | crontab -
+            # Set TZ in the cron command for compatibility with macOS and Linux
+            (crontab -l 2>/dev/null; echo "$minute $hour * * * TZ=$TIMEZONE $script_path") | crontab -
         else
             # Use system timezone
             (crontab -l 2>/dev/null; echo "$minute $hour * * * $script_path") | crontab -
@@ -149,7 +149,7 @@ elif test_should_run; then
     execute_command
 else
     write_log "Current time is not in schedule, skipping execution"
-    local current_time
+    current_time=""
     if [[ -n "$TIMEZONE" ]]; then
         current_time=$(TZ="$TIMEZONE" date '+%H:%M')
     else
