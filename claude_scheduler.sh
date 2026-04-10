@@ -5,7 +5,8 @@
 
 # =========================== Configuration ===========================
 # Command to execute (modify to your actual command)
-COMMAND_TO_RUN="claude -p 'hi'"
+# Use 'which claude' to auto-detect claude path, or hardcode if needed
+COMMAND_TO_RUN="$(which claude) -p 'hi'"
 
 # Timezone setting (optional, defaults to system timezone)
 # Set to "Asia/Taipei" for UTC+8, or leave empty to use system timezone
@@ -105,23 +106,42 @@ setup_cron() {
     local script_path
     script_path=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
 
+    # Auto-detect paths for claude and node
+    local claude_path node_path node_dir
+    claude_path=$(which claude 2>/dev/null) || {
+        write_log "Error: claude command not found in PATH"
+        return 1
+    }
+    node_path=$(which node 2>/dev/null) || {
+        write_log "Warning: node command not found, some features may not work"
+        node_dir=""
+    }
+    [[ -n "$node_path" ]] && node_dir="$(dirname "$node_path")"
+
     # Remove existing cron jobs for this script
     crontab -l 2>/dev/null | grep -v "$script_path" | crontab -
 
     # Add new cron jobs
     for time in "${SCHEDULE_TIMES[@]}"; do
-        local hour minute
+        local hour minute cron_entry
         hour=$(echo "$time" | cut -d: -f1)
         minute=$(echo "$time" | cut -d: -f2)
 
-        # Create cron job with timezone support
-        if [[ -n "$TIMEZONE" ]]; then
-            # Set TZ in the cron command for compatibility with macOS and Linux
-            (crontab -l 2>/dev/null; echo "$minute $hour * * * TZ=$TIMEZONE $script_path") | crontab -
+        # Build cron entry with auto-detected paths
+        if [[ -n "$node_dir" ]]; then
+            cron_entry="$minute $hour * * * PATH=$node_dir:\$PATH"
         else
-            # Use system timezone
-            (crontab -l 2>/dev/null; echo "$minute $hour * * * $script_path") | crontab -
+            cron_entry="$minute $hour * * * PATH=\$PATH"
         fi
+
+        if [[ -n "$TIMEZONE" ]]; then
+            cron_entry="$cron_entry TZ=$TIMEZONE"
+        fi
+
+        cron_entry="$cron_entry $script_path"
+
+        # Create cron job
+        (crontab -l 2>/dev/null; echo "$cron_entry") | crontab -
 
         write_log "Added cron job: $time daily"
     done
