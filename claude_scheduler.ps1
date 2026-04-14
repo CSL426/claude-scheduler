@@ -8,7 +8,11 @@ param(
 
 # =========================== Configuration ===========================
 # Command to execute (modify to your actual command)
-$commandToRun = "claude -p 'hi'"
+$claudeBin = (Get-Command claude -ErrorAction SilentlyContinue)?.Source
+if (-not $claudeBin) {
+    $claudeBin = "$env:USERPROFILE\AppData\Roaming\npm\claude.cmd"
+}
+$commandToRun = "`"$claudeBin`" --model claude-haiku-4-5-20251001 -p 'reply with only the word: hi'"
 
 # Daily execution times (24-hour format: HH:mm)
 # Set to run every 5 hours to match Claude's reset cycle

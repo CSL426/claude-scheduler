@@ -5,8 +5,9 @@
 
 # =========================== Configuration ===========================
 # Command to execute (modify to your actual command)
-# Use 'which claude' to auto-detect claude path, or hardcode if needed
-COMMAND_TO_RUN="$(which claude) -p 'hi'"
+# Auto-detect claude path at runtime to handle different environments
+_CLAUDE_BIN=$(command -v claude 2>/dev/null || echo "$HOME/.local/bin/claude")
+COMMAND_TO_RUN="$_CLAUDE_BIN --model claude-haiku-4-5-20251001 -p 'reply with only the word: hi'"
 
 # Timezone setting (optional, defaults to system timezone)
 # Set to "Asia/Taipei" for UTC+8, or leave empty to use system timezone
