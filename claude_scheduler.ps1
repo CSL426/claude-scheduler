@@ -12,7 +12,9 @@ $claudeBin = (Get-Command claude -ErrorAction SilentlyContinue)?.Source
 if (-not $claudeBin) {
     $claudeBin = "$env:USERPROFILE\AppData\Roaming\npm\claude.cmd"
 }
-$commandToRun = "`"$claudeBin`" --model claude-haiku-4-5-20251001 -p 'reply with only the word: hi'"
+# Claude arguments - used in both main path and fallback path
+$claudeArgs = "--model claude-haiku-4-5-20251001 -p 'reply with only the word: hi'"
+$commandToRun = "`"$claudeBin`" $claudeArgs"
 
 # Daily execution times (24-hour format: HH:mm)
 # Set to run every 5 hours to match Claude's reset cycle
@@ -113,7 +115,7 @@ function Execute-Command {
             foreach ($path in $claudePaths) {
                 if (Test-Path $path) {
                     Write-Log "Found Claude at: $path"
-                    $commandToRun = "`"$path`" -p 'hi'"
+                    $commandToRun = "`"$path`" $claudeArgs"
                     $claudeFound = $true
                     break
                 }

@@ -31,7 +31,7 @@ powershell -ExecutionPolicy Bypass -File "%~dp0claude_scheduler.ps1" -Setup
 echo.
 echo Setup completed!
 echo.
-echo Script will automatically execute 'claude -p hi' at:
+echo Script will automatically execute 'claude --model claude-haiku-4-5-20251001 -p "reply with only the word: hi"' at:
 echo - Daily 07:30 (start of workday)
 echo - Daily 12:30 (midday)
 echo - Daily 17:30 (afternoon)

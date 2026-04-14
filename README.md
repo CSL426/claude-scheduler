@@ -1,6 +1,6 @@
 # Claude Auto Scheduler
 
-自動執行 `claude -p 'hi'` 指令，配合 Claude 每5小時重製週期。
+自動執行 `claude --model claude-haiku-4-5-20251001 -p 'reply with only the word: hi'` 指令，配合 Claude 每5小時重製週期。
 
 ## 支援平台
 
