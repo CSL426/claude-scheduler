@@ -24,7 +24,7 @@ CONFIG_OPTIONS = (
     "--claude-path",
     "--node-path",
 )
-PATH_OPTIONS = ("--claude-path", "--node-path")
+PATH_OPTIONS = ("--node-path",)
 SHELLS = ("bash", "powershell")
 
 
@@ -45,7 +45,15 @@ def bash_completion() -> str:
     case "$command" in
         config)
             case "$previous" in
-                --claude-path|--node-path)
+                --claude-path)
+                    COMPREPLY=(
+                        $(compgen -W 'auto' -- "$current")
+                        $(compgen -f -- "$current")
+                    )
+                    compopt -o filenames 2>/dev/null || true
+                    return
+                    ;;
+                --node-path)
                     COMPREPLY=( $(compgen -f -- "$current") )
                     compopt -o filenames 2>/dev/null || true
                     return
@@ -103,6 +111,15 @@ def powershell_completion() -> str:
             $previousArgument = $arguments[-1]
         }}
         if ($command -eq 'config') {{
+            if ($previousArgument -eq '--claude-path') {{
+                if ('auto' -like "$wordToComplete*") {{
+                    'auto'
+                }}
+                [System.Management.Automation.CompletionCompleters]::CompleteFilename(
+                    $wordToComplete
+                )
+                return
+            }}
             if ($pathOptions -contains $previousArgument) {{
                 [System.Management.Automation.CompletionCompleters]::CompleteFilename(
                     $wordToComplete

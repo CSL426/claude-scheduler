@@ -12,6 +12,7 @@ from typing import Any
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 DEFAULT_PROMPT = "reply with only the word: hi"
 DEFAULT_TIMES = ("07:00", "12:05", "17:10", "22:15")
+CLAUDE_PATH_MODES = ("auto", "explicit")
 TIME_PATTERN = re.compile(r"(?:[01]\d|2[0-3]):[0-5]\d")
 
 
@@ -25,6 +26,7 @@ class SchedulerConfig:
     model: str = DEFAULT_MODEL
     prompt: str = DEFAULT_PROMPT
     claude_path: str | None = None
+    claude_path_mode: str = "auto"
     node_path: str | None = None
 
     def validate(self) -> SchedulerConfig:
@@ -39,6 +41,14 @@ class SchedulerConfig:
             raise ConfigError("Model must not be empty")
         if not self.prompt.strip():
             raise ConfigError("Prompt must not be empty")
+        if self.claude_path_mode not in CLAUDE_PATH_MODES:
+            raise ConfigError(
+                f"Invalid Claude path mode: {self.claude_path_mode}"
+            )
+        if self.claude_path_mode == "explicit" and not self.claude_path:
+            raise ConfigError(
+                "Explicit Claude path mode requires claude_path"
+            )
         return self
 
 
@@ -114,7 +124,14 @@ def save_config(config: SchedulerConfig, path: Path | None = None) -> Path:
 
 
 def _config_from_mapping(data: dict[str, Any]) -> SchedulerConfig:
-    allowed = {"times", "model", "prompt", "claude_path", "node_path"}
+    allowed = {
+        "times",
+        "model",
+        "prompt",
+        "claude_path",
+        "claude_path_mode",
+        "node_path",
+    }
     unknown = sorted(set(data) - allowed)
     if unknown:
         raise ConfigError(f"Unknown configuration field: {unknown[0]}")
@@ -124,11 +141,14 @@ def _config_from_mapping(data: dict[str, Any]) -> SchedulerConfig:
     model = data.get("model", DEFAULT_MODEL)
     prompt = data.get("prompt", DEFAULT_PROMPT)
     claude_path = data.get("claude_path")
+    claude_path_mode = data.get("claude_path_mode", "auto")
     node_path = data.get("node_path")
     if not isinstance(model, str) or not isinstance(prompt, str):
         raise ConfigError("model and prompt must be strings")
     if claude_path is not None and not isinstance(claude_path, str):
         raise ConfigError("claude_path must be a string or null")
+    if not isinstance(claude_path_mode, str):
+        raise ConfigError("claude_path_mode must be a string")
     if node_path is not None and not isinstance(node_path, str):
         raise ConfigError("node_path must be a string or null")
     return SchedulerConfig(
@@ -136,5 +156,6 @@ def _config_from_mapping(data: dict[str, Any]) -> SchedulerConfig:
         model=model,
         prompt=prompt,
         claude_path=claude_path,
+        claude_path_mode=claude_path_mode,
         node_path=node_path,
     ).validate()

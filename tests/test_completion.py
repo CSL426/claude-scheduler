@@ -29,7 +29,9 @@ def test_bash_completion_includes_every_config_option(option):
 def test_bash_completion_handles_values_and_only_registers_ccs():
     rendered = completion.bash_completion()
 
-    assert "--claude-path|--node-path" in rendered
+    assert "--claude-path)" in rendered
+    assert "--node-path)" in rendered
+    assert "compgen -W 'auto'" in rendered
     assert "compgen -f" in rendered
     assert "--time)" in rendered
     assert "07:00 12:05 17:10 22:15" in rendered
@@ -46,6 +48,8 @@ def test_powershell_completion_handles_commands_options_and_paths():
     for option in completion.CONFIG_OPTIONS:
         assert f"'{option}'" in rendered
     assert "CompleteFilename" in rendered
+    assert "$previousArgument -eq '--claude-path'" in rendered
+    assert "'auto' -like" in rendered
     assert "-not $wordToComplete" in rendered
     assert "Register-ArgumentCompleter -CommandName 'ccs'" in rendered
     assert "claude-scheduler" not in rendered

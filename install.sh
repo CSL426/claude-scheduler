@@ -117,7 +117,9 @@ install_bash_completion() {
             "$completion_dir/claude-scheduler.bash" \
             "$completion_dir/claude-scheduler.exe.bash"
         step "Installed Bash completion: $completion_file"
-        step "Activate in this shell: hash -r && source \"$completion_file\""
+        step "Activate now without reopening:" \
+            "export PATH=\"$BIN_DIR:\$PATH\" && hash -r &&" \
+            "source <(\"$destination\" completion bash)"
     else
         rm -f -- "$staged_completion"
         warn "Shell completion could not be installed."

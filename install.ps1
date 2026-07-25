@@ -173,7 +173,8 @@ function Install-Completions([string]$Executable) {
     Update-CompletionProfile (
         $PROFILE.CurrentUserAllHosts
     ) $PowerShellCompletionPath
-    Write-Step 'Installed Bash and PowerShell completions; restart the terminal to load them.'
+    . $PowerShellCompletionPath
+    Write-Step 'Installed and activated Bash and PowerShell completions; no restart is required.'
 }
 
 if (-not [Environment]::Is64BitOperatingSystem) {

@@ -61,7 +61,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     config_parser.add_argument("--model")
     config_parser.add_argument("--prompt")
-    config_parser.add_argument("--claude-path", type=Path)
+    config_parser.add_argument(
+        "--claude-path",
+        metavar="PATH|auto",
+        help="Pin a Claude executable, or use auto to follow CLI updates",
+    )
     config_parser.add_argument("--node-path", type=Path)
     return parser
 
@@ -113,12 +117,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "status":
             installed, scheduler = backend.status()
+            try:
+                resolved_claude_path = resolve_claude(config)
+            except ClaudeNotFoundError:
+                resolved_claude_path = None
             payload = {
                 "installed": installed,
                 "scheduler": scheduler,
                 "times": list(config.times),
                 "model": config.model,
                 "claude_path": config.claude_path,
+                "claude_path_mode": config.claude_path_mode,
+                "resolved_claude_path": resolved_claude_path,
                 "node_path": config.node_path,
                 "config_path": str(selected_config),
                 "log_path": str(selected_state / "scheduled_task.log"),
@@ -263,16 +273,30 @@ def _configure(
             "model": config.model,
             "prompt": config.prompt,
             "claude_path": config.claude_path,
+            "claude_path_mode": config.claude_path_mode,
             "node_path": config.node_path,
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return 0
     claude_path = config.claude_path
+    claude_path_mode = config.claude_path_mode
     if args.claude_path is not None:
-        resolved_path = args.claude_path.expanduser().resolve()
-        if not resolved_path.is_file():
-            raise ConfigError(f"Claude CLI does not exist: {resolved_path}")
-        claude_path = str(resolved_path)
+        if args.claude_path.lower() == "auto":
+            automatic = replace(
+                config,
+                claude_path=None,
+                claude_path_mode="auto",
+            )
+            claude_path = resolve_claude(automatic)
+            claude_path_mode = "auto"
+        else:
+            selected_path = Path(args.claude_path).expanduser().absolute()
+            if not selected_path.is_file():
+                raise ConfigError(
+                    f"Claude CLI does not exist: {selected_path}"
+                )
+            claude_path = str(selected_path)
+            claude_path_mode = "explicit"
     node_path = config.node_path
     if args.node_path is not None:
         resolved_node = args.node_path.expanduser().resolve()
@@ -285,6 +309,7 @@ def _configure(
         model=args.model if args.model is not None else config.model,
         prompt=args.prompt if args.prompt is not None else config.prompt,
         claude_path=claude_path,
+        claude_path_mode=claude_path_mode,
         node_path=node_path,
     )
     target = save_config(updated, selected_config)

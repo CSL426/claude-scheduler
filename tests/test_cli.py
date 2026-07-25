@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,7 @@ def test_install_resolves_claude_and_uses_backend(tmp_path, monkeypatch):
         ("07:00", "12:05", "17:10", "22:15"),
     )
     assert load_config(path).claude_path == str(executable.resolve())
+    assert load_config(path).claude_path_mode == "auto"
 
 
 def test_config_rejects_missing_claude_path(tmp_path, monkeypatch, capsys):
@@ -113,6 +115,7 @@ def test_setup_interactively_saves_and_installs(tmp_path, monkeypatch):
     assert config.model == "claude-haiku-4-5-20251001"
     assert config.prompt == "reply with hi"
     assert config.claude_path == str(executable.resolve())
+    assert config.claude_path_mode == "auto"
     assert backend.installed == (
         [
             "/bin/scheduler",
@@ -137,6 +140,34 @@ def test_setup_can_save_without_installing(tmp_path, monkeypatch, capsys):
     assert "ccs install" in capsys.readouterr().out
 
 
+def test_setup_uses_saved_times_as_prompt_default(tmp_path, monkeypatch):
+    path = tmp_path / "config.json"
+    prompts = []
+    answers = iter(["", "", "", "n"])
+
+    assert cli.main(
+        [
+            "--config-path",
+            str(path),
+            "config",
+            "--time",
+            "08:10",
+            "--time",
+            "19:20",
+        ]
+    ) == 0
+
+    def answer(prompt):
+        prompts.append(prompt)
+        return next(answers)
+
+    monkeypatch.setattr("builtins.input", answer)
+
+    assert cli.main(["--config-path", str(path), "setup"]) == 0
+    assert prompts[0] == "Schedule times [08:10, 19:20]: "
+    assert load_config(path).times == ("08:10", "19:20")
+
+
 def test_setup_reprompts_invalid_times(tmp_path, monkeypatch, capsys):
     path = tmp_path / "config.json"
     answers = iter(["25:00", "08:30", "", "", "no"])
@@ -147,6 +178,106 @@ def test_setup_reprompts_invalid_times(tmp_path, monkeypatch, capsys):
     assert result == 0
     assert load_config(path).times == ("08:30",)
     assert "Invalid schedule" in capsys.readouterr().out
+
+
+def test_config_explicitly_pins_claude_path(
+    tmp_path,
+    monkeypatch,
+):
+    config_path = tmp_path / "config.json"
+    executable = tmp_path / "bin/claude"
+    executable.parent.mkdir()
+    executable.touch()
+    monkeypatch.setenv("CCS_CONFIG", str(config_path))
+
+    result = cli.main(
+        ["config", "--claude-path", str(executable)]
+    )
+
+    assert result == 0
+    config = load_config(config_path)
+    assert config.claude_path == str(executable.absolute())
+    assert config.claude_path_mode == "explicit"
+
+
+def test_config_can_switch_claude_path_back_to_auto(
+    tmp_path,
+    monkeypatch,
+):
+    config_path = tmp_path / "config.json"
+    pinned = tmp_path / "pinned/claude"
+    pinned.parent.mkdir()
+    pinned.touch()
+    current = tmp_path / "current/claude"
+    current.parent.mkdir()
+    current.touch()
+    monkeypatch.setenv("CCS_CONFIG", str(config_path))
+    monkeypatch.setattr(
+        "claude_scheduler.runner.shutil.which",
+        lambda name: str(current) if name == "claude" else None,
+    )
+
+    assert cli.main(
+        ["config", "--claude-path", str(pinned)]
+    ) == 0
+    assert cli.main(["config", "--claude-path", "auto"]) == 0
+
+    config = load_config(config_path)
+    assert config.claude_path == str(current.absolute())
+    assert config.claude_path_mode == "auto"
+
+
+def test_config_output_includes_claude_path_mode(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    config_path = tmp_path / "config.json"
+    monkeypatch.setenv("CCS_CONFIG", str(config_path))
+
+    assert cli.main(["config"]) == 0
+
+    payload = capsys.readouterr().out
+    assert '"claude_path_mode": "auto"' in payload
+
+
+def test_status_distinguishes_cached_and_resolved_claude_paths(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    config_path = tmp_path / "config.json"
+    cached = tmp_path / "versions/old"
+    cached.parent.mkdir()
+    cached.touch()
+    current = tmp_path / "bin/claude"
+    current.parent.mkdir()
+    current.touch()
+    config_path.write_text(
+        json.dumps(
+            {
+                "times": ["07:00"],
+                "model": "model",
+                "prompt": "prompt",
+                "claude_path": str(cached),
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "claude_scheduler.runner.shutil.which",
+        lambda name: str(current) if name == "claude" else None,
+    )
+    monkeypatch.setattr(cli, "current_backend", FakeBackend)
+
+    assert cli.main(
+        ["--config-path", str(config_path), "status"]
+    ) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["claude_path"] == str(cached)
+    assert payload["claude_path_mode"] == "auto"
+    assert payload["resolved_claude_path"] == str(current.absolute())
 
 
 def test_version_subcommand(capsys):

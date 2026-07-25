@@ -32,7 +32,11 @@ Code CLI。
 Linux 或 macOS：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.sh |
+  bash &&
+  export PATH="$HOME/.local/bin:$PATH" &&
+  hash -r &&
+  source <(ccs completion bash)
 ```
 
 Windows PowerShell：
@@ -154,7 +158,7 @@ ccs -V
 輸出格式：
 
 ```text
-CC Scheduler (ccs) 0.3.0
+CC Scheduler (ccs) 0.3.1
 ```
 
 從 source checkout 執行 `ccs update` 時，若同時存在 standalone 版本，
@@ -162,15 +166,19 @@ CC Scheduler (ccs) 0.3.0
 
 ## Tab completion
 
-Standalone 安裝器會自動安裝 completion。Linux／macOS 安裝後若要讓目前的
-Bash 立即生效，可執行安裝器顯示的：
+Standalone 安裝器會自動安裝 completion。上方 Linux／macOS 一行安裝指令
+會在安裝後立刻更新目前 Bash 的 `PATH`、清除 command cache 並載入
+completion，不需要重開終端。若只單獨執行安裝器或更新後需要重新載入：
 
 ```bash
-hash -r && source "${BASH_COMPLETION_USER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion}/completions/ccs.bash"
+export PATH="$HOME/.local/bin:$PATH"
+hash -r
+source <(ccs completion bash)
 ```
 
 Windows 會安裝 Git Bash completion，並把 PowerShell completion 載入區塊
-寫入目前使用者的 PowerShell profile；重新開啟終端即可生效。
+寫入目前使用者的 PowerShell profile，同時在目前 PowerShell runspace
+直接載入，不需要重新開啟終端。
 
 需要手動載入或檢查內容時：
 
@@ -194,7 +202,8 @@ ccs setup
 ```
 
 依序輸入時間、model 與 prompt；直接按 Enter 會保留方括號內的目前值。
-時間可使用逗號或空白分隔。最後可選擇立即建立或更新系統排程。
+時間可使用逗號或空白分隔。儲存後的時間會成為下次互動設定的預設值，
+不會跳回程式內建時間。最後可選擇立即建立或更新系統排程。
 
 ```text
 Schedule times [07:00, 12:05, 17:10, 22:15]: 08:00, 13:30, 19:00
@@ -238,6 +247,20 @@ ccs config \
 ```bash
 ccs config --claude-path /absolute/path/to/claude
 ```
+
+這會把 `claude_path_mode` 設為 `explicit`，之後固定使用指定路徑。預設的
+`auto` 模式會保存 `claude` launcher 本身而不是解析後的版本檔，因此
+Claude Code 更新後排程會自動跟隨新版本。切回自動偵測：
+
+```bash
+ccs config --claude-path auto
+ccs install
+```
+
+舊版設定若沒有 `claude_path_mode`，會自動視為 `auto`；下一次執行
+`ccs install` 時會把舊的版本路徑遷移為穩定 launcher。
+`ccs status` 會同時顯示保存的 `claude_path`、模式與實際使用的
+`resolved_claude_path`，方便確認排程是否已跟上 Claude Code 更新。
 
 Windows npm 安裝若找不到 Node：
 

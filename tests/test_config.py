@@ -28,6 +28,7 @@ def test_config_round_trip(tmp_path):
         model="test-model",
         prompt="hello",
         claude_path="/opt/bin/claude",
+        claude_path_mode="explicit",
         node_path="/opt/bin/node",
     )
 
@@ -38,6 +39,20 @@ def test_config_round_trip(tmp_path):
         "08:15",
         "19:45",
     ]
+
+
+def test_legacy_claude_path_defaults_to_auto_mode(tmp_path):
+    path = tmp_path / "config.json"
+    path.write_text(
+        '{"times":["07:00"],"model":"model","prompt":"prompt",'
+        '"claude_path":"/old/version"}',
+        encoding="utf-8",
+    )
+
+    config = load_config(path)
+
+    assert config.claude_path == "/old/version"
+    assert config.claude_path_mode == "auto"
 
 
 @pytest.mark.parametrize(
@@ -52,6 +67,18 @@ def test_config_round_trip(tmp_path):
 def test_config_rejects_invalid_times(times, message):
     with pytest.raises(ConfigError, match=message):
         SchedulerConfig(times=times).validate()
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        SchedulerConfig(claude_path_mode="invalid"),
+        SchedulerConfig(claude_path_mode="explicit"),
+    ],
+)
+def test_config_rejects_invalid_claude_path_mode(config):
+    with pytest.raises(ConfigError):
+        config.validate()
 
 
 def test_config_rejects_unknown_fields(tmp_path):

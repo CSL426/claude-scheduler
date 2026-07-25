@@ -47,14 +47,59 @@ def resolve_claude_launcher(config: SchedulerConfig) -> tuple[str, ...]:
 
 
 def resolve_claude(config: SchedulerConfig) -> str:
-    if config.claude_path and Path(config.claude_path).is_file():
-        return config.claude_path
-    executable = shutil.which("claude")
-    if executable:
-        return str(Path(executable).resolve())
+    if config.claude_path_mode == "explicit":
+        if config.claude_path and Path(config.claude_path).is_file():
+            return config.claude_path
+        raise ClaudeNotFoundError(
+            f"Configured Claude CLI does not exist: {config.claude_path}"
+        )
+    executable = _discover_claude(config)
+    if executable is not None:
+        return executable
     raise ClaudeNotFoundError(
         "Claude CLI was not found. Install it or run config --claude-path PATH."
     )
+
+
+def _discover_claude(config: SchedulerConfig) -> str | None:
+    executable = shutil.which("claude")
+    if executable:
+        absolute_executable = _absolute_path(executable)
+        stable_launcher = _native_launcher_from_cached_path(
+            absolute_executable
+        )
+        return stable_launcher or absolute_executable
+    stable_launcher = _native_launcher_from_cached_path(config.claude_path)
+    if stable_launcher is not None:
+        return stable_launcher
+    if config.claude_path and Path(config.claude_path).is_file():
+        return config.claude_path
+    return None
+
+
+def _absolute_path(value: str | Path) -> str:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = Path.cwd() / path
+    return str(path.absolute())
+
+
+def _native_launcher_from_cached_path(cached: str | None) -> str | None:
+    if cached is None:
+        return None
+    path = Path(cached).expanduser()
+    if (
+        path.parent.name != "versions"
+        or path.parent.parent.name != "claude"
+        or len(path.parents) < 4
+    ):
+        return None
+    bin_dir = path.parents[3] / "bin"
+    for name in ("claude", "claude.exe", "claude.cmd", "claude.bat"):
+        candidate = bin_dir / name
+        if candidate.is_file():
+            return str(candidate.absolute())
+    return None
 
 
 def resolve_node(config: SchedulerConfig) -> str | None:

@@ -7,6 +7,12 @@
 list rather than a shell command. Credentials remain entirely under Claude
 CLI's control.
 
+Claude path resolution has two explicit modes. `auto` stores a stable launcher
+path and follows Claude Code upgrades, while `explicit` uses only the path
+selected by the user. Configuration written before the mode field existed is
+treated as `auto`; the previous version-specific native path is retained only
+as a fallback until it can be migrated to the stable launcher.
+
 ## Platform boundary
 
 The scheduler backend is selected at runtime:
