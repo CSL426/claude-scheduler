@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from claude_scheduler import cli
+import pytest
+
+from claude_scheduler import PRODUCT_NAME, __version__, cli
 from claude_scheduler.config import load_config
 
 
@@ -132,7 +134,7 @@ def test_setup_can_save_without_installing(tmp_path, monkeypatch, capsys):
 
     assert result == 0
     assert load_config(path).times == ("09:15", "21:45")
-    assert "claude-scheduler install" in capsys.readouterr().out
+    assert "ccs install" in capsys.readouterr().out
 
 
 def test_setup_reprompts_invalid_times(tmp_path, monkeypatch, capsys):
@@ -145,3 +147,102 @@ def test_setup_reprompts_invalid_times(tmp_path, monkeypatch, capsys):
     assert result == 0
     assert load_config(path).times == ("08:30",)
     assert "Invalid schedule" in capsys.readouterr().out
+
+
+def test_version_subcommand(capsys):
+    result = cli.main(["version"])
+
+    assert result == 0
+    assert capsys.readouterr().out.strip() == f"{PRODUCT_NAME} {__version__}"
+
+
+@pytest.mark.parametrize("argument", ["--version", "-V"])
+def test_version_flags(argument, capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        cli.main([argument])
+
+    assert exit_info.value.code == 0
+    assert capsys.readouterr().out.strip() == f"{PRODUCT_NAME} {__version__}"
+
+
+def test_update_command_runs_updater(monkeypatch):
+    from claude_scheduler import update
+
+    monkeypatch.setattr(update, "run_update", lambda: 17)
+
+    assert cli.main(["update"]) == 17
+
+
+@pytest.mark.parametrize(
+    ("shell", "expected"),
+    [
+        ("bash", "complete -o default -F _ccs_completion ccs"),
+        ("powershell", "Register-ArgumentCompleter -CommandName 'ccs'"),
+    ],
+)
+def test_completion_command(shell, expected, capsys):
+    assert cli.main(["completion", shell]) == 0
+    assert expected in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("executable_name", ["ccs", "ccs.exe"])
+def test_launch_command_accepts_only_ccs_entrypoints(
+    executable_name,
+    tmp_path,
+    monkeypatch,
+):
+    executable = tmp_path / executable_name
+    monkeypatch.setattr(cli.sys, "argv", [str(executable)])
+    monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
+
+    assert cli._launch_command() == [str(executable.resolve())]
+
+
+@pytest.mark.parametrize(
+    "executable_name",
+    ["claude-scheduler", "claude-scheduler.exe"],
+)
+def test_launch_command_rejects_removed_entrypoints(
+    executable_name,
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(cli.sys, "argv", [str(tmp_path / executable_name)])
+    monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
+
+    with pytest.raises(RuntimeError, match="run ccs install"):
+        cli._launch_command()
+
+
+@pytest.mark.parametrize(
+    ("entrypoint_name", "legacy_name"),
+    [
+        ("ccs", "claude-scheduler"),
+        ("ccs.exe", "claude-scheduler.exe"),
+    ],
+)
+def test_successful_install_can_remove_legacy_entrypoint(
+    entrypoint_name,
+    legacy_name,
+    tmp_path,
+    monkeypatch,
+):
+    legacy = tmp_path / legacy_name
+    legacy.write_text("legacy\n", encoding="utf-8")
+    monkeypatch.setattr(cli.sys, "argv", [str(tmp_path / entrypoint_name)])
+    monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
+
+    cli._remove_legacy_entrypoint()
+
+    assert not legacy.exists()
+
+
+def test_legacy_entrypoint_directory_is_never_removed(tmp_path, monkeypatch):
+    legacy = tmp_path / "claude-scheduler"
+    legacy.mkdir()
+    monkeypatch.setattr(cli.sys, "argv", [str(tmp_path / "ccs")])
+    monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
+
+    cli._remove_legacy_entrypoint()
+
+    assert legacy.is_dir()

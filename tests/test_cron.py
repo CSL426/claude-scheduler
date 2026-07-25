@@ -30,14 +30,14 @@ def test_install_preserves_unmanaged_crontab_and_quotes_command():
     backend = CronBackend(process)
 
     backend.install(
-        ["/home/person/My Tools/claude-scheduler"],
+        ["/home/person/My Tools/ccs"],
         ("07:00", "12:05"),
     )
 
     assert process.content.startswith("15 1 * * * backup\n")
     assert BEGIN_MARKER in process.content
     assert (
-        "00 07 * * * '/home/person/My Tools/claude-scheduler' run"
+        "00 07 * * * '/home/person/My Tools/ccs' run"
         in process.content
     )
     assert "05 12 * * *" in process.content
@@ -73,11 +73,11 @@ def test_install_removes_legacy_script_entry():
         "30 7 * * * PATH=/usr/bin:$PATH /repo/claude_scheduler.sh\n"
     )
 
-    CronBackend(process).install(["/bin/claude-scheduler"], ("07:00",))
+    CronBackend(process).install(["/bin/ccs"], ("07:00",))
 
     assert "backup" in process.content
     assert "claude_scheduler.sh" not in process.content
-    assert "claude-scheduler run" in process.content
+    assert "ccs run" in process.content
 
 
 def test_legacy_detection_ignores_comments():

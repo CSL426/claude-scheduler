@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-scheduler"
-version = "0.2.0"
+version = "0.3.0"
 description = "Cross-platform scheduler for Claude Code CLI"
 readme = "README.md"
 requires-python = ">=3.11"
 
 [project.scripts]
-claude-scheduler = "claude_scheduler.cli:console_main"
+ccs = "claude_scheduler.cli:console_main"
 
 [tool.setuptools.packages.find]
 include = ["claude_scheduler*"]

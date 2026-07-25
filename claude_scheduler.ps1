@@ -9,12 +9,12 @@ $command = if ($Setup) {
     "run"
 }
 
-$executable = Get-Command claude-scheduler -ErrorAction SilentlyContinue
+$executable = Get-Command ccs -ErrorAction SilentlyContinue
 if ($executable) {
     & $executable.Source $command
 } elseif ($Setup) {
     Write-Error (
-        "claude-scheduler is not installed. Run: " +
+        "ccs is not installed. Run: " +
         "python -m pip install --editable `"$PSScriptRoot`""
     )
     exit 1

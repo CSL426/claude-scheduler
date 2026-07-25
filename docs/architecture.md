@@ -25,7 +25,9 @@ cron entry before installing its LaunchAgent.
 
 ## Distribution
 
-PyInstaller builds a native executable on each target operating system. Shell
-and PowerShell installers download the matching GitHub Release asset, verify
-its SHA-256 file, and create scheduled tasks without requiring a source
-checkout or a local Python installation.
+PyInstaller builds the native `ccs` or `ccs.exe` executable on each target
+operating system. Shell and PowerShell installers download the matching GitHub
+Release asset, verify its SHA-256 file, install shell completion, and create
+scheduled tasks without requiring a source checkout or a local Python
+installation. Existing configuration paths and scheduler ownership identifiers
+remain stable across the executable rename.

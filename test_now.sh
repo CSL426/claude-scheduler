@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if command -v claude-scheduler >/dev/null 2>&1; then
-    exec claude-scheduler run
+if command -v ccs >/dev/null 2>&1; then
+    exec ccs run
 fi
 
 cd "$(dirname "$0")"

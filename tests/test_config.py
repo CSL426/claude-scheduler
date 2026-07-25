@@ -69,3 +69,14 @@ def test_environment_paths_are_resolved(tmp_path, monkeypatch):
 
     assert config_path() == Path(tmp_path / "relative/config.json")
     assert state_dir() == Path(tmp_path / "relative/state")
+
+
+def test_ccs_environment_paths_take_precedence(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CCS_CONFIG", "ccs/config.json")
+    monkeypatch.setenv("CCS_STATE_DIR", "ccs/state")
+    monkeypatch.setenv("CLAUDE_SCHEDULER_CONFIG", "legacy/config.json")
+    monkeypatch.setenv("CLAUDE_SCHEDULER_STATE_DIR", "legacy/state")
+
+    assert config_path() == Path(tmp_path / "ccs/config.json")
+    assert state_dir() == Path(tmp_path / "ccs/state")

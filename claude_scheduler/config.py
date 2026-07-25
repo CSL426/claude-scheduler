@@ -43,7 +43,10 @@ class SchedulerConfig:
 
 
 def config_path() -> Path:
-    override = os.environ.get("CLAUDE_SCHEDULER_CONFIG")
+    override = os.environ.get(
+        "CCS_CONFIG",
+        os.environ.get("CLAUDE_SCHEDULER_CONFIG"),
+    )
     if override:
         return Path(override).expanduser().resolve()
     if sys.platform == "win32":
@@ -56,7 +59,10 @@ def config_path() -> Path:
 
 
 def state_dir() -> Path:
-    override = os.environ.get("CLAUDE_SCHEDULER_STATE_DIR")
+    override = os.environ.get(
+        "CCS_STATE_DIR",
+        os.environ.get("CLAUDE_SCHEDULER_STATE_DIR"),
+    )
     if override:
         return Path(override).expanduser().resolve()
     if sys.platform == "win32":

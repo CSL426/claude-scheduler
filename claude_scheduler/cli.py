@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
 
-from . import __version__
+from . import PRODUCT_NAME, __version__
 from .config import (
     ConfigError,
     SchedulerConfig,
@@ -28,7 +28,13 @@ from .runner import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="claude-scheduler")
+    parser = argparse.ArgumentParser(prog="ccs")
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"{PRODUCT_NAME} {__version__}",
+    )
     parser.add_argument("--config-path", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--state-dir", type=Path, help=argparse.SUPPRESS)
     subparsers = parser.add_subparsers(dest="command")
@@ -37,7 +43,13 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("status", help="Show configuration and task status")
     subparsers.add_parser("run", help="Run Claude immediately")
     subparsers.add_parser("setup", help="Configure interactively")
+    subparsers.add_parser("update", help="Download and install the latest release")
     subparsers.add_parser("version", help="Show version")
+    completion_parser = subparsers.add_parser(
+        "completion",
+        help="Generate shell completion",
+    )
+    completion_parser.add_argument("shell", choices=("bash", "powershell"))
 
     config_parser = subparsers.add_parser("config", help="Show or edit configuration")
     config_parser.add_argument(
@@ -60,7 +72,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         build_parser().print_help()
         return 0
     if args.command == "version":
-        print(f"claude-scheduler {__version__}")
+        print(f"{PRODUCT_NAME} {__version__}")
+        return 0
+    if args.command == "update":
+        from .update import run_update
+
+        return run_update()
+    if args.command == "completion":
+        from .completion import render_completion
+
+        print(render_completion(args.shell), end="")
         return 0
     selected_config = (
         args.config_path.expanduser().resolve()
@@ -144,6 +165,7 @@ def _install(
         str(selected_state),
     ]
     selected_backend.install(scheduled_command, config.times)
+    _remove_legacy_entrypoint()
     print(
         f"Installed {len(config.times)} task(s) with "
         f"{selected_backend.status()[1]}."
@@ -178,7 +200,7 @@ def _setup(
     target = save_config(updated, selected_config)
     print(f"Saved configuration to {target}.")
     if not install_now:
-        print("Run 'claude-scheduler install' when you are ready.")
+        print("Run 'ccs install' when you are ready.")
         return 0
     return _install(updated, selected_config, selected_state)
 
@@ -274,9 +296,33 @@ def _launch_command() -> list[str]:
     if getattr(sys, "frozen", False):
         return [str(Path(sys.executable).resolve())]
     entrypoint = Path(sys.argv[0])
-    if entrypoint.name in {"claude-scheduler", "claude-scheduler.exe"}:
+    if entrypoint.name in {"ccs", "ccs.exe"}:
         return [str(entrypoint.resolve())]
     raise RuntimeError(
         "Scheduling from 'python -m' is not persistent. Install the package "
-        "and run claude-scheduler install."
+        "and run ccs install."
     )
+
+
+def _remove_legacy_entrypoint() -> None:
+    if getattr(sys, "frozen", False):
+        entrypoint = Path(sys.executable).resolve()
+    else:
+        entrypoint = Path(sys.argv[0]).resolve()
+    if entrypoint.name not in {"ccs", "ccs.exe"}:
+        return
+    legacy_name = (
+        "claude-scheduler.exe"
+        if entrypoint.name == "ccs.exe"
+        else "claude-scheduler"
+    )
+    legacy = entrypoint.with_name(legacy_name)
+    if not legacy.is_file() and not legacy.is_symlink():
+        return
+    try:
+        legacy.unlink()
+    except OSError as error:
+        print(
+            f"warning: Could not remove legacy command {legacy}: {error}",
+            file=sys.stderr,
+        )

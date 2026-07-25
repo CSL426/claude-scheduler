@@ -1,7 +1,7 @@
 @echo off
-where claude-scheduler >nul 2>&1
+where ccs >nul 2>&1
 if errorlevel 1 goto python_fallback
-claude-scheduler run
+ccs run
 exit /b %errorlevel%
 
 :python_fallback

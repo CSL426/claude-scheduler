@@ -39,3 +39,19 @@ jobs:
       - name: Check shell installer syntax
         if: runner.os != 'Windows'
         run: bash -n install.sh
+
+      - name: Check PowerShell installer syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $syntaxElements = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path install.ps1),
+              [ref]$syntaxElements,
+              [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              exit 1
+          }

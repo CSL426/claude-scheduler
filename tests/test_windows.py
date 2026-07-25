@@ -22,7 +22,7 @@ def test_windows_install_removes_old_tasks_and_creates_each_time():
     )
     backend = WindowsTaskBackend(process)
 
-    backend.install([r"C:\Program Files\claude-scheduler.exe"], ("07:00", "12:05"))
+    backend.install([r"C:\Program Files\ccs.exe"], ("07:00", "12:05"))
 
     delete_calls = [call for call, _ in process.calls if call[1] == "/Delete"]
     create_calls = [call for call, _ in process.calls if call[1] == "/Create"]
@@ -31,7 +31,7 @@ def test_windows_install_removes_old_tasks_and_creates_each_time():
     assert len(create_calls) == 2
     assert create_calls[0][create_calls[0].index("/TN") + 1] == "ClaudeScheduler_0700"
     action = create_calls[0][create_calls[0].index("/TR") + 1]
-    assert action == r'"C:\Program Files\claude-scheduler.exe" run'
+    assert action == r'"C:\Program Files\ccs.exe" run'
 
 
 def test_windows_status_ignores_unrelated_tasks():
