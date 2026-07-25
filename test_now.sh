@@ -1,17 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-echo "Testing Claude Scheduler Now"
-echo "============================="
-echo
-echo "Current time: $(date '+%Y-%m-%d %H:%M:%S')"
-echo
+set -euo pipefail
 
-echo "Running bash script..."
-bash "$(dirname "$0")/claude_scheduler.sh" test
+if command -v claude-scheduler >/dev/null 2>&1; then
+    exec claude-scheduler run
+fi
 
-echo
-echo "Test completed!"
-echo "Check the log file: scheduled_task.log"
-echo
-
-read -p "Press Enter to continue..."
+cd "$(dirname "$0")"
+exec python -m claude_scheduler run

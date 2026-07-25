@@ -1,116 +1,194 @@
-# Claude Auto Scheduler
+# Claude Scheduler
 
-自動執行 `claude --model claude-haiku-4-5-20251001 -p 'reply with only the word: hi'` 指令，配合 Claude 每5小時重製週期。
+跨平台的 Claude Code CLI 排程工具。Linux 使用 cron、macOS 使用
+launchd、Windows 使用 Task Scheduler；三個平台共用同一套 Python
+設定、驗證、執行與日誌邏輯。
 
-## 支援平台
+預設會在系統本地時區的以下時間執行：
 
-- **Windows**: PowerShell + Task Scheduler
-- **macOS / Linux**: Bash + Cron
+- 07:00
+- 12:05
+- 17:10
+- 22:15
 
-## 快速開始
+執行的 Claude 指令等同於：
 
-### Windows
-```cmd
-# 設定排程任務（需要管理員權限）
-windows.bat
-
-# 立即測試（不需要管理員權限）
-test_now.bat
+```text
+claude --model claude-haiku-4-5-20251001 -p "reply with only the word: hi"
 ```
 
-### macOS / Linux
+本工具不會保存或複製 Claude 憑證，而是沿用該機器既有的 Claude CLI
+登入狀態。
+
+## 安裝
+
+### Standalone 一行安裝
+
+Release 執行檔已包含 Python runtime，目標機器只需先安裝並登入 Claude
+Code CLI。
+
+Linux 或 macOS：
+
 ```bash
-# 設定 cron 任務
-./linux.sh
-
-# 立即測試
-./test_now.sh
+curl -fsSL https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.sh | bash
 ```
 
-## 執行時間
+Windows PowerShell：
 
-每5小時執行一次，可依需求更改：
-- 07:30, 12:30, 17:30, 22:30
+```powershell
+irm https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.ps1 | iex
+```
 
-## 背景執行
+安裝器會：
 
-- **Windows**: 完全隱藏執行，不會跳出視窗
-- **macOS / Linux**: 背景執行
+- 下載目前平台的 GitHub Release 執行檔。
+- 驗證 SHA-256。
+- 安裝 `claude-scheduler`。
+- 尋找本機的 Claude 與 Node 執行檔。
+- 建立使用者層級的排程，不需要管理員權限。
 
-## 時區設定
+只安裝 CLI、不建立排程：
 
-### macOS / Linux
-預設 UTC+8，可修改 `claude_scheduler.sh` 中的 `TIMEZONE`
-
-### Windows
-使用系統時區
-
-## 自訂設定
-
-### 修改時間
 ```bash
-# macOS / Linux: 編輯 claude_scheduler.sh
-SCHEDULE_TIMES=("08:00" "13:00" "18:00" "23:00")
-
-# Windows: 編輯 claude_scheduler.ps1
-$scheduleTimes = @("08:00", "13:00", "18:00", "23:00")
+CLAUDE_SCHEDULER_SKIP_SETUP=1 \
+  curl -fsSL https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.sh | bash
 ```
 
-### 修改指令
+Windows PowerShell：
+
+```powershell
+$env:CLAUDE_SCHEDULER_SKIP_SETUP = "1"
+irm https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.ps1 | iex
+```
+
+可用 `CLAUDE_SCHEDULER_VERSION` 指定 release tag。
+
+### Clone 後安裝
+
+需要 Python 3.11 以上版本：
+
 ```bash
-# macOS / Linux
-COMMAND_TO_RUN="your command"
-
-# Windows
-$commandToRun = "your command"
+git clone https://github.com/ac-Spark/claude-scheduler.git
+cd claude-scheduler
+python -m venv .venv
+.venv/bin/pip install --editable .
+.venv/bin/claude-scheduler install
 ```
 
-## 日誌查看
+Windows PowerShell：
 
-所有執行記錄都整合在單一日誌檔中：
-- `scheduled_task.log` - 包含所有日誌、命令輸出和錯誤訊息
-
-## 測試功能
-
-可隨時測試腳本功能，無需等待排程時間：
-
-### Windows
-```cmd
-test_now.bat
+```powershell
+git clone https://github.com/ac-Spark/claude-scheduler.git
+Set-Location claude-scheduler
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --editable .
+.\.venv\Scripts\claude-scheduler.exe install
 ```
 
-### macOS / Linux
+這種方式建立的排程會指向該 `.venv`，因此安裝後不可刪除或搬動 checkout。
+
+## CLI 指令
+
+```text
+claude-scheduler install
+claude-scheduler remove
+claude-scheduler status
+claude-scheduler run
+claude-scheduler config
+claude-scheduler version
+```
+
+- `install`：建立或更新排程。
+- `remove`：移除本工具管理的排程。
+- `status`：顯示排程狀態、設定與日誌位置。
+- `run`：立即執行一次 Claude。
+- `config`：顯示或修改設定。
+- `version`：顯示版本。
+
+第一次安裝會移除舊版 `claude_scheduler.sh` cron 項目及 Windows
+`Claude_HHMM` 任務；其他不相關的排程不會被變更。
+
+## 設定排程時間
+
+查看目前設定：
+
 ```bash
-./test_now.sh
+claude-scheduler config
 ```
 
-## 移除任務
+用重複的 `--time HH:MM` 取代完整排程時間清單：
 
-### Windows
-```cmd
-schtasks /delete /tn Claude_0730 /f
-schtasks /delete /tn Claude_1230 /f
-schtasks /delete /tn Claude_1730 /f
-schtasks /delete /tn Claude_2230 /f
-```
-
-### macOS / Linux
 ```bash
-crontab -e  # 刪除相關行
+claude-scheduler config \
+  --time 08:00 \
+  --time 13:00 \
+  --time 18:00 \
+  --time 23:00
+claude-scheduler install
 ```
 
-## 檔案說明
+時間使用 24 小時制與系統本地時區。修改時間後要再執行一次 `install`，
+讓 cron、launchd 或 Task Scheduler 套用新時間。
 
-### Windows
-- `claude_scheduler.ps1` - 主腳本
-- `windows.bat` - 排程設定工具（需要管理員權限）
-- `test_now.bat` - 立即測試工具
+修改模型或提示詞：
 
-### macOS / Linux
-- `claude_scheduler.sh` - 主腳本
-- `linux.sh` - cron 設定工具
-- `test_now.sh` - 立即測試工具
+```bash
+claude-scheduler config \
+  --model <model-id> \
+  --prompt "<prompt>"
+```
 
-### 共用
-- `README.md` - 說明文件
-- `scheduled_task.log` - 執行日誌
+手動指定 Claude CLI：
+
+```bash
+claude-scheduler config --claude-path /absolute/path/to/claude
+```
+
+Windows npm 安裝若找不到 Node：
+
+```powershell
+claude-scheduler config --node-path C:\path\to\node.exe
+```
+
+Windows npm 的 `claude.cmd` 不會直接經過 `cmd.exe` 執行；工具會解析其
+Node 與 Claude CLI JavaScript entrypoint，避免 prompt 被 shell 展開。
+
+## 設定與日誌位置
+
+設定檔：
+
+- Linux：`${XDG_CONFIG_HOME:-~/.config}/claude-scheduler/config.json`
+- macOS：`~/Library/Application Support/claude-scheduler/config.json`
+- Windows：`%APPDATA%\claude-scheduler\config.json`
+
+日誌目錄：
+
+- Linux：`${XDG_STATE_HOME:-~/.local/state}/claude-scheduler/`
+- macOS：`~/Library/Logs/claude-scheduler/`
+- Windows：`%LOCALAPPDATA%\claude-scheduler\`
+
+`install` 會把設定檔與 state 目錄的絕對路徑寫入排程。若安裝時能找到
+Node，也會保存 Node 絕對路徑，並在執行 Claude 時補進 `PATH`，避免 cron
+的精簡環境讓 Claude hooks 找不到 Node。
+
+## 開發與發布驗證
+
+```bash
+python -m pytest
+ruff check claude_scheduler tests scripts/standalone_entry.py
+bash -n install.sh linux.sh test_now.sh
+git diff --check
+```
+
+GitHub Actions 會在 Linux、macOS、Windows 的 Python 3.11 與 3.12
+執行測試。`v*` tag 會建立以下 standalone 執行檔及 SHA-256：
+
+- Linux x86-64
+- Windows x86-64
+- macOS x86-64
+- macOS arm64
+
+更多設計細節：
+
+- [架構](docs/architecture.md)
+- [平台行為](docs/platform-behavior.md)

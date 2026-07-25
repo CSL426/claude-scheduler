@@ -1,16 +1,12 @@
 @echo off
-echo Testing Claude Scheduler Now
-echo =============================
+where claude-scheduler >nul 2>&1
+if errorlevel 1 goto python_fallback
+claude-scheduler run
+exit /b %errorlevel%
 
-echo Current time: %TIME%
-echo.
-
-echo Running PowerShell script...
-powershell -ExecutionPolicy Bypass -File "%~dp0claude_scheduler.ps1" -Test
-
-echo.
-echo Test completed!
-echo Check the log file: scheduled_task.log
-echo.
-
-pause
+:python_fallback
+pushd "%~dp0"
+python -m claude_scheduler run
+set "scheduler_exit=%errorlevel%"
+popd
+exit /b %scheduler_exit%

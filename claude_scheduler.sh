@@ -16,10 +16,10 @@ TIMEZONE="Asia/Taipei"
 # Daily execution times (24-hour format: HH:MM)
 # Set to run every 5 hours to match Claude's reset cycle
 SCHEDULE_TIMES=(
-    "07:30"  # Start of workday
-    "12:30"  # Midday (7:30 + 5 hours)
-    "17:30"  # Afternoon (12:30 + 5 hours)
-    "22:30"  # Evening (17:30 + 5 hours)
+    "07:00"
+    "12:05"
+    "17:10"
+    "22:15"
 )
 
 # Log file path - use absolute path
@@ -161,23 +161,12 @@ if [[ "$1" == "setup" ]]; then
     exit 0
 fi
 
-# Check if test mode or command should be executed  
+# Check if test mode
 if [[ "$1" == "test" ]]; then
     write_log "Test mode: Force executing command regardless of schedule..."
     execute_command
-elif test_should_run; then
-    write_log "Current time matches schedule, starting execution..."
-    execute_command
 else
-    write_log "Current time is not in schedule, skipping execution"
-    current_time=""
-    if [[ -n "$TIMEZONE" ]]; then
-        current_time=$(TZ="$TIMEZONE" date '+%H:%M')
-    else
-        current_time=$(date '+%H:%M')
-    fi
-    write_log "Scheduled times: ${SCHEDULE_TIMES[*]}"
-    write_log "Current time check: $current_time"
+    execute_command
 fi
 
 write_log "=== Script Execution Completed ==="
