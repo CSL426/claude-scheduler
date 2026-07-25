@@ -19,10 +19,12 @@ class LaunchdBackend:
         process_runner: RunProcess = subprocess.run,
         agents_dir: Path | None = None,
         legacy_cron: CronBackend | None = None,
+        user_id: int | None = None,
     ) -> None:
         self._run = process_runner
         self._agents_dir = agents_dir or Path.home() / "Library/LaunchAgents"
         self._legacy_cron = legacy_cron or CronBackend()
+        self._user_id = user_id
 
     @property
     def plist_path(self) -> Path:
@@ -46,7 +48,7 @@ class LaunchdBackend:
             "StandardErrorPath": str(log_dir / "launchd.stderr.log"),
         }
         self.plist_path.write_bytes(plistlib.dumps(payload, sort_keys=True))
-        domain = f"gui/{os.getuid()}"
+        domain = self._domain()
         self._run(
             ["launchctl", "bootout", domain, str(self.plist_path)],
             capture_output=True,
@@ -62,7 +64,7 @@ class LaunchdBackend:
 
     def remove(self) -> None:
         self._legacy_cron.remove_legacy()
-        domain = f"gui/{os.getuid()}"
+        domain = self._domain()
         self._run(
             ["launchctl", "bootout", domain, str(self.plist_path)],
             capture_output=True,
@@ -75,9 +77,13 @@ class LaunchdBackend:
         if not self.plist_path.exists():
             return False, "launchd"
         result = self._run(
-            ["launchctl", "print", f"gui/{os.getuid()}/{LABEL}"],
+            ["launchctl", "print", f"{self._domain()}/{LABEL}"],
             capture_output=True,
             text=True,
             check=False,
         )
         return result.returncode == 0, "launchd"
+
+    def _domain(self) -> str:
+        user_id = self._user_id if self._user_id is not None else os.getuid()
+        return f"gui/{user_id}"
