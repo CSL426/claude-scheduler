@@ -17,7 +17,7 @@ from .config import (
     save_config,
     state_dir,
 )
-from .platforms import current_backend
+from .platforms import SchedulerBackend, current_backend
 from .runner import (
     ClaudeNotFoundError,
     resolve_claude,
@@ -36,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("remove", help="Remove scheduled tasks")
     subparsers.add_parser("status", help="Show configuration and task status")
     subparsers.add_parser("run", help="Run Claude immediately")
+    subparsers.add_parser("setup", help="Configure interactively")
     subparsers.add_parser("version", help="Show version")
 
     config_parser = subparsers.add_parser("config", help="Show or edit configuration")
@@ -75,6 +76,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         config = load_config(selected_config)
         if args.command == "config":
             return _configure(args, config, selected_config)
+        if args.command == "setup":
+            return _setup(config, selected_config, selected_state)
         if args.command == "run":
             return run_claude(
                 config,
@@ -82,29 +85,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         backend = current_backend()
         if args.command == "install":
-            launch_command = _launch_command()
-            executable = resolve_claude(config)
-            launcher = resolve_claude_launcher(config)
-            node_path = resolve_node(config)
-            if len(launcher) == 2:
-                node_path = launcher[0]
-            if executable != config.claude_path or node_path != config.node_path:
-                config = replace(
-                    config,
-                    claude_path=executable,
-                    node_path=node_path,
-                )
-                save_config(config, selected_config)
-            scheduled_command = [
-                *launch_command,
-                "--config-path",
-                str(selected_config),
-                "--state-dir",
-                str(selected_state),
-            ]
-            backend.install(scheduled_command, config.times)
-            print(f"Installed {len(config.times)} task(s) with {backend.status()[1]}.")
-            return 0
+            return _install(config, selected_config, selected_state, backend)
         if args.command == "remove":
             backend.remove()
             print("Removed scheduled tasks.")
@@ -133,6 +114,106 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"error: {error}", file=sys.stderr)
         return 1
     return 2
+
+
+def _install(
+    config: SchedulerConfig,
+    selected_config: Path,
+    selected_state: Path,
+    backend: SchedulerBackend | None = None,
+) -> int:
+    selected_backend = backend or current_backend()
+    launch_command = _launch_command()
+    executable = resolve_claude(config)
+    launcher = resolve_claude_launcher(config)
+    node_path = resolve_node(config)
+    if len(launcher) == 2:
+        node_path = launcher[0]
+    if executable != config.claude_path or node_path != config.node_path:
+        config = replace(
+            config,
+            claude_path=executable,
+            node_path=node_path,
+        )
+        save_config(config, selected_config)
+    scheduled_command = [
+        *launch_command,
+        "--config-path",
+        str(selected_config),
+        "--state-dir",
+        str(selected_state),
+    ]
+    selected_backend.install(scheduled_command, config.times)
+    print(
+        f"Installed {len(config.times)} task(s) with "
+        f"{selected_backend.status()[1]}."
+    )
+    return 0
+
+
+def _setup(
+    config: SchedulerConfig,
+    selected_config: Path,
+    selected_state: Path,
+) -> int:
+    try:
+        times = _prompt_times(config)
+        model = _prompt_value("Model", config.model)
+        prompt = _prompt_value("Prompt", config.prompt)
+        install_now = _prompt_confirmation(
+            "Install scheduled tasks now?",
+            default=True,
+        )
+    except EOFError as error:
+        raise ConfigError(
+            "Interactive setup requires terminal input"
+        ) from error
+
+    updated = replace(
+        config,
+        times=times,
+        model=model,
+        prompt=prompt,
+    ).validate()
+    target = save_config(updated, selected_config)
+    print(f"Saved configuration to {target}.")
+    if not install_now:
+        print("Run 'claude-scheduler install' when you are ready.")
+        return 0
+    return _install(updated, selected_config, selected_state)
+
+
+def _prompt_times(config: SchedulerConfig) -> tuple[str, ...]:
+    current = ", ".join(config.times)
+    while True:
+        answer = input(f"Schedule times [{current}]: ").strip()
+        if not answer:
+            return config.times
+        times = tuple(answer.replace(",", " ").split())
+        try:
+            replace(config, times=times).validate()
+        except ConfigError as error:
+            print(f"Invalid schedule: {error}")
+            continue
+        return times
+
+
+def _prompt_value(label: str, current: str) -> str:
+    answer = input(f"{label} [{current}]: ").strip()
+    return answer or current
+
+
+def _prompt_confirmation(question: str, *, default: bool) -> bool:
+    suffix = "[Y/n]" if default else "[y/N]"
+    while True:
+        answer = input(f"{question} {suffix}: ").strip().lower()
+        if not answer:
+            return default
+        if answer in {"y", "yes"}:
+            return True
+        if answer in {"n", "no"}:
+            return False
+        print("Please answer y or n.")
 
 
 def console_main() -> int:

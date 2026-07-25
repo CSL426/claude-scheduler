@@ -96,6 +96,7 @@ claude-scheduler install
 claude-scheduler remove
 claude-scheduler status
 claude-scheduler run
+claude-scheduler setup
 claude-scheduler config
 claude-scheduler version
 ```
@@ -104,6 +105,7 @@ claude-scheduler version
 - `remove`：移除本工具管理的排程。
 - `status`：顯示排程狀態、設定與日誌位置。
 - `run`：立即執行一次 Claude。
+- `setup`：互動設定時間、model、prompt，並選擇是否立即安裝。
 - `config`：顯示或修改設定。
 - `version`：顯示版本。
 
@@ -111,6 +113,24 @@ claude-scheduler version
 `Claude_HHMM` 任務；其他不相關的排程不會被變更。
 
 ## 設定排程時間
+
+互動設定：
+
+```bash
+claude-scheduler setup
+```
+
+依序輸入時間、model 與 prompt；直接按 Enter 會保留方括號內的目前值。
+時間可使用逗號或空白分隔。最後可選擇立即建立或更新系統排程。
+
+```text
+Schedule times [07:00, 12:05, 17:10, 22:15]: 08:00, 13:30, 19:00
+Model [claude-haiku-4-5-20251001]:
+Prompt [reply with only the word: hi]:
+Install scheduled tasks now? [Y/n]:
+```
+
+非互動設定：
 
 查看目前設定：
 
