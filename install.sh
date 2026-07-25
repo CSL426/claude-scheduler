@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPOSITORY="ac-Spark/claude-scheduler"
+REPOSITORY="CSL426/claude-scheduler"
 VERSION="${CLAUDE_SCHEDULER_VERSION:-latest}"
 BIN_DIR="${CLAUDE_SCHEDULER_BIN_DIR:-$HOME/.local/bin}"
 

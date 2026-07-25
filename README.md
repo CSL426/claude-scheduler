@@ -1,5 +1,7 @@
 # Claude Scheduler
 
+[![Cross-platform CLI](https://github.com/CSL426/claude-scheduler/actions/workflows/ci.yml/badge.svg)](https://github.com/CSL426/claude-scheduler/actions/workflows/ci.yml)
+
 跨平台的 Claude Code CLI 排程工具。Linux 使用 cron、macOS 使用
 launchd、Windows 使用 Task Scheduler；三個平台共用同一套 Python
 設定、驗證、執行與日誌邏輯。
@@ -30,13 +32,13 @@ Code CLI。
 Linux 或 macOS：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.sh | bash
 ```
 
 Windows PowerShell：
 
 ```powershell
-irm https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.ps1 | iex
 ```
 
 安裝器會：
@@ -51,14 +53,14 @@ irm https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.ps1
 
 ```bash
 CLAUDE_SCHEDULER_SKIP_SETUP=1 \
-  curl -fsSL https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.sh | bash
 ```
 
 Windows PowerShell：
 
 ```powershell
 $env:CLAUDE_SCHEDULER_SKIP_SETUP = "1"
-irm https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.ps1 | iex
 ```
 
 可用 `CLAUDE_SCHEDULER_VERSION` 指定 release tag。
@@ -68,7 +70,7 @@ irm https://raw.githubusercontent.com/ac-Spark/claude-scheduler/main/install.ps1
 需要 Python 3.11 以上版本：
 
 ```bash
-git clone https://github.com/ac-Spark/claude-scheduler.git
+git clone https://github.com/CSL426/claude-scheduler.git
 cd claude-scheduler
 python -m venv .venv
 .venv/bin/pip install --editable .
@@ -78,7 +80,7 @@ python -m venv .venv
 Windows PowerShell：
 
 ```powershell
-git clone https://github.com/ac-Spark/claude-scheduler.git
+git clone https://github.com/CSL426/claude-scheduler.git
 Set-Location claude-scheduler
 py -3.11 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --editable .

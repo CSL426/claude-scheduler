@@ -12,7 +12,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repository = "ac-Spark/claude-scheduler"
+$repository = "CSL426/claude-scheduler"
 $asset = "claude-scheduler-windows-x86_64.exe"
 
 if ($Version -eq "latest") {
