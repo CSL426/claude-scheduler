@@ -52,8 +52,8 @@ irm https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.ps1 |
 只安裝 CLI、不建立排程：
 
 ```bash
-CLAUDE_SCHEDULER_SKIP_SETUP=1 \
-  curl -fsSL https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.sh |
+  CLAUDE_SCHEDULER_SKIP_SETUP=1 bash
 ```
 
 Windows PowerShell：
