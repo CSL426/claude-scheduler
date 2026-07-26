@@ -3,8 +3,8 @@
 [![Cross-platform CLI](https://github.com/CSL426/claude-scheduler/actions/workflows/ci.yml/badge.svg)](https://github.com/CSL426/claude-scheduler/actions/workflows/ci.yml)
 
 `ccs` 是跨平台的 Claude Code CLI 排程工具。Linux 使用 cron、macOS 使用
-launchd、Windows 使用 Task Scheduler；三個平台共用同一套 Python
-設定、驗證、執行與日誌邏輯。
+launchd、Windows 使用 Task Scheduler；三個平台共用同一套設定、驗證、
+執行與日誌邏輯。
 
 預設會在系統本地時區的以下時間執行：
 
@@ -24,10 +24,10 @@ claude --model claude-haiku-4-5-20251001 -p "reply with only the word: hi"
 
 ## 安裝
 
-### Standalone 一行安裝
+### 一般使用者：Standalone 一行安裝
 
-Release 執行檔已包含 Python runtime，目標機器只需先安裝並登入 Claude
-Code CLI。
+建議一般使用者使用這種方式。Release 執行檔已包含 Python runtime，
+目標機器**不需要安裝 Python**，只需先安裝並登入 Claude Code CLI。
 
 Linux 或 macOS：
 
@@ -78,9 +78,10 @@ irm https://raw.githubusercontent.com/CSL426/claude-scheduler/main/install.ps1 |
 `CLAUDE_SCHEDULER_*` 安裝環境變數仍可讀取，方便既有自動化升級，但新設定
 一律使用 `CCS_*`。
 
-### Clone 後安裝
+### 開發者：從原始碼安裝
 
-需要 Python 3.11 以上版本：
+這種方式適合開發或修改專案，才需要 Python 3.11 以上版本。一般使用者請
+使用上方不依賴 Python 的 Standalone 安裝方式。
 
 ```bash
 git clone https://github.com/CSL426/claude-scheduler.git
